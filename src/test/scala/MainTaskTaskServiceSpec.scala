@@ -34,6 +34,12 @@ object MinTrianglePathServiceTest extends ZIOSpecDefault {
         srv <- ZIO.service[MinTrianglePathService]
         result <- srv.findMinPath("src/test/resources/data_big.txt")
       } yield assertTrue(result.contains(2000))
+    },
+    test("scenario 6. Extra data case") {
+      for {
+        srv <- ZIO.service[MinTrianglePathService]
+        result <- srv.findMinPath("src/test/resources/extra.txt")
+      } yield assertTrue(result.contains(11))
     }
 
   ).provide(MinTrianglePathService.live)
