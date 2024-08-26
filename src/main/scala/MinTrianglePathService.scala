@@ -3,25 +3,27 @@ import zio.{ZIO, _}
 
 import scala.math._
 
-trait MinTrianglePath {
+trait MinTrianglePathService {
 
   def findMinPath(path: String): Task[Option[Int]]
 
 }
 
-object MinTrianglePath {
+object MinTrianglePathService {
 
-  class ServiceLive extends MinTrianglePath {
+  class ServiceLive extends MinTrianglePathService {
 
     override def findMinPath(path: String): Task[Option[Int]] = {
       for {
         ref <- Ref.make[List[List[Int]]](List.empty)
         _ <- ZStream.fromFileName(path).via(ZPipeline.utf8Decode >>> ZPipeline.splitLines)
-          .foreach { line =>
-            val p = line.split(" ").map(_.toInt).toList
-            ref.modify(l => (ref, l :+ p))
+          .foreach { lines =>
+            for {
+              line <- ZIO.attempt(lines.split(" ").map(_.toInt).toList)
+                .foldZIO(ex => ZIO.fail(new RuntimeException("Unable to parse and prepare data", ex)), x => ZIO.succeed(x))
+              _ <- ref.modify(l => (ref, l :+ line))
+            } yield ()
           }
-          .tapError(ex => ZIO.fail(new RuntimeException("Unable to prepare data: ", ex)))
         rawData <- ref.get
         validData <- validateData(rawData)
         result <- ZIO.attempt(minPath(validData))
